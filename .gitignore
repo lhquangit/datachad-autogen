@@ -1,3 +1,13 @@
 .cache
 config.json
 spark-warehouse
+stores
+data
+models
+__pycache__
+.env
+.ipynb_checkpoints
+.DS_Store
+testing.ipynb
+.vscode
+.venv
