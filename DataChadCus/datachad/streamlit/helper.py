@@ -113,7 +113,7 @@ def authenticate() -> None:
         "activeloop_token": activeloop_token,
         "activeloop_id": activeloop_id,
     }
-    import ipdb; ipdb.set_trace(context=10)
+    # import ipdb; ipdb.set_trace(context=10)
     msg = "Authentification successful!"
     st.session_state["info_container"].info(msg, icon=PAGE_ICON)
     # logger.info(f"Autogen: {str(autogen)}")

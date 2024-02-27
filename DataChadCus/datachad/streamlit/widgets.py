@@ -31,7 +31,7 @@ from datachad.streamlit.helper import (
     update_chain,
     upload_data,
 )
-
+from datachad.backend.autogen import *
 
 def page_header() -> None:
     # Page options and header
@@ -223,27 +223,54 @@ def data_selection_widget() -> None:
 def chat_interface_widget() -> None:
     if len(st.session_state["chat_history"].messages) == 0:
         st.session_state["chat_history"].clear()
+    if not st.session_state["autogen"]:
+        st.chat_message("assistant").write("How can I help you?")
 
-    st.chat_message("assistant").write("How can I help you?")
+        avatars = {"human": "user", "ai": "assistant"}
 
-    # if use_autogen:
-    avatars = {"human": "user", "ai": "assistant"}
+        for msg in st.session_state["chat_history"].messages:
+            st.chat_message(avatars[msg.type]).write(msg.content)
 
-    for msg in st.session_state["chat_history"].messages:
-        st.chat_message(avatars[msg.type]).write(msg.content)
+        if user_query := st.chat_input(placeholder="Ask me anything!"):
+            st.chat_message("user").write(user_query)
 
-    if user_query := st.chat_input(placeholder="Ask me anything!"):
-        st.chat_message("user").write(user_query)
+            with st.chat_message("assistant"):
+                callbacks = []
+                if st.session_state["knowledge_bases"] or st.session_state["smart_faq"]:
+                    callbacks.append(PrintRetrievalHandler(st.container()))
+                callbacks.extend([StreamHandler(st.empty()), UsageHandler()])
+                # import ipdb; ipdb.set_trace(context=10)
 
-        with st.chat_message("assistant"):
-            callbacks = []
-            if st.session_state["knowledge_bases"] or st.session_state["smart_faq"]:
-                callbacks.append(PrintRetrievalHandler(st.container()))
-            callbacks.extend([StreamHandler(st.empty()), UsageHandler()])
-            # import ipdb; ipdb.set_trace(context=10)
+                response = st.session_state["chain"].run(user_query, callbacks=callbacks)
+                logger.info(f"Response: '{response}'")
+    else:
+        avatars = {"Boss": "🤖", "Senior_Python_Engineer": "👩‍🎤",\
+                   "Product_Manager": "👩‍🎨", "Code_Reviewer": "🦖"}
+        for msg in st.session_state["chat_history"].messages:
+            st.chat_message(avatars[msg.type]).write(msg.content)
+        
+        if user_query := st.chat_input(placeholder="Ask me anything!"):
+            st.chat_message(avatars["Boss"]).write(user_query)
 
-            response = st.session_state["chain"].run(user_query, callbacks=callbacks)
-            logger.info(f"Response: '{response}'")
+        # with not st.chat_message(avatars["Boss"]):
+        config_list, llm_config=load_config()
+        boss, coder, pm, reviewer = create_agents(config_list, llm_config)
+        reset_agents(boss, coder, pm, reviewer)
+        groupchat = autogen.GroupChat(
+                    agents=[boss, pm, coder, reviewer],
+                    messages=[],
+                    max_round=12,
+                    speaker_selection_method="auto",
+                    allow_repeat_speaker=False,
+                    )
+        manager = autogen.GroupChatManager(groupchat=groupchat, llm_config=llm_config)
+
+        # Start chatting with the boss as this is the user proxy agent.
+        boss.initiate_chat(
+            manager,
+            message=user_query,
+        )
+
 
 
 def usage_widget() -> None:

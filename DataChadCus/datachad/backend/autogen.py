@@ -5,12 +5,15 @@ import autogen
 from autogen import AssistantAgent
 from autogen.agentchat.contrib.retrieve_user_proxy_agent import RetrieveUserProxyAgent
 import os
-import logger
+# import logger
 
 def load_config():
     current_dir = os.getcwd()
     parent_dir = os.path.dirname(current_dir)
-    file_path = os.path.join(parent_dir, "autogen_config.json")
+    file_path = os.path.join(parent_dir, "config.json")
+
+    # import ipdb; ipdb.set_trace(context=10)
+
     config_list = autogen.config_list_from_json(file_path)
 
     llm_config = {
@@ -18,15 +21,16 @@ def load_config():
     "temperature": 0,
     "config_list": config_list,
     }
-    logger.info(f"Autogen data path: {file_path}")
-    logger.info(f"LLM model: {[config_list[i]["model"] for i in range(len(config_list))]}")
+    # logger.info(f"Autogen data path: {file_path}")
+    # logger.info(f"LLM model: {[config_list[i]["model"] for i in range(len(config_list))]}")
+    # import ipdb; ipdb.set_trace(context=10)
     return config_list, llm_config
 
 def termination_msg(x):
     return isinstance(x, dict) and "TERMINATE" == str(x.get("content", ""))[-9:].upper()
 
-def create_agents():
-    config_list, llm_config = load_config()
+def create_agents(config_list, llm_config):
+    # config_list, llm_config = load_config()
     boss = autogen.UserProxyAgent(
                                 name="Boss",
                                 is_termination_msg=termination_msg,
@@ -78,4 +82,13 @@ def create_agents():
                             description="Code Reviewer who can review the code.",
                         )
     
-    
+    return boss, coder, pm, reviewer
+
+
+def reset_agents(boss, coder, pm, reviewer):
+    boss.reset()
+    coder.reset()
+    pm.reset()
+    reviewer.reset()
+
+
