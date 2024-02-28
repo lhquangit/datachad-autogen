@@ -24,12 +24,12 @@ def load_config():
     # logger.info(f"Autogen data path: {file_path}")
     # logger.info(f"LLM model: {[config_list[i]["model"] for i in range(len(config_list))]}")
     # import ipdb; ipdb.set_trace(context=10)
-    return config_list, llm_config
+    return llm_config
 
 def termination_msg(x):
     return isinstance(x, dict) and "TERMINATE" == str(x.get("content", ""))[-9:].upper()
 
-def create_agents(config_list, llm_config):
+def create_agents(llm_config):
     # config_list, llm_config = load_config()
     boss = autogen.UserProxyAgent(
                                 name="Boss",
@@ -38,24 +38,6 @@ def create_agents(config_list, llm_config):
                                 code_execution_config=False,  # we don't want to execute code in this case.
                                 default_auto_reply="Reply `TERMINATE` if the task is done.",
                                 description="The boss who ask questions and give tasks.",
-                                )
-    
-    boss_aid = RetrieveUserProxyAgent(
-                                name="Boss_Assistant",
-                                is_termination_msg=termination_msg,
-                                human_input_mode="NEVER",
-                                max_consecutive_auto_reply=3,
-                                retrieve_config={
-                                    "task": "code",
-                                    "docs_path": "https://raw.githubusercontent.com/microsoft/FLAML/main/website/docs/Examples/Integrate%20-%20Spark.md",
-                                    "chunk_token_size": 1000,
-                                    "model": config_list[0]["model"],
-                                    "client": chromadb.PersistentClient(path="/tmp/chromadb"),
-                                    "collection_name": "groupchat",
-                                    "get_or_create": True,
-                                },
-                                code_execution_config=False,  # we don't want to execute code in this case.
-                                description="Assistant who has extra content retrieval power for solving difficult problems.",
                                 )
     
     coder = AssistantAgent(

@@ -253,25 +253,38 @@ def chat_interface_widget() -> None:
             st.chat_message(avatars["Boss"]).write(user_query)
 
         # with not st.chat_message(avatars["Boss"]):
-        config_list, llm_config=load_config()
-        boss, coder, pm, reviewer = create_agents(config_list, llm_config)
-        reset_agents(boss, coder, pm, reviewer)
-        groupchat = autogen.GroupChat(
-                    agents=[boss, pm, coder, reviewer],
-                    messages=[],
-                    max_round=12,
-                    speaker_selection_method="auto",
-                    allow_repeat_speaker=False,
-                    )
-        manager = autogen.GroupChatManager(groupchat=groupchat, llm_config=llm_config)
+        if user_query:
+            llm_config=load_config()
+            boss, coder, pm, reviewer = create_agents(llm_config)
+            reset_agents(boss, coder, pm, reviewer)
+            groupchat = autogen.GroupChat(
+                        agents=[boss, pm, coder, reviewer],
+                        messages=[],
+                        max_round=5,
+                        speaker_selection_method="auto",
+                        allow_repeat_speaker=False,
+                        )
+            manager = autogen.GroupChatManager(groupchat=groupchat, llm_config=llm_config)
+            # import ipdb; ipdb.set_trace(context=10)
 
-        # Start chatting with the boss as this is the user proxy agent.
-        boss.initiate_chat(
-            manager,
-            message=user_query,
-        )
+            # for msg in st.session_state["chat_history"].messages:
+            #     if "name" in list(msg.keys()):
+            #         st.chat_message(avatars[msg["name"]]).write(msg["content"])
+            #     else:
+            #         st.chat_message(avatars["Boss"]).write(msg["content"])
 
-
+            # Start chatting with the boss as this is the user proxy agent.
+            response = boss.initiate_chat(
+                manager,
+                message=user_query,
+            )
+            # import ipdb; ipdb.set_trace(context=10)
+            # st.session_state["chat_history"].messages.extend(response.chat_history)
+            # import ipdb; ipdb.set_trace(context=10)
+            for i in range(1, len(response.chat_history)-1):                
+                st.chat_message(avatars[response.chat_history[i]["name"]]).write(response.chat_history[i]["content"])
+            # logger.info(f"Response: '{response}'")
+            # import ipdb; ipdb.set_trace(context=10)
 
 def usage_widget() -> None:
     # Usage sidebar with total used tokens and costs
